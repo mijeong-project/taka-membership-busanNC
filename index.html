@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>타카플레이카페 회원 조회</title>
+
+    <link rel="stylesheet" href="./index.css">
+
+</head>
+<body>
+
+    <h2>🔍 타카 회원 조회 시스템 (부산대NC점)</h2>
+    
+    <div class="search-box">
+        <input type="text" id="phoneInput" placeholder="전화번호 뒤 4자리를 입력하세요" onkeypress="if(event.keyCode==13) searchMember()">
+        <button onclick="searchMember()">검색</button>
+    </div>
+
+    <div id="resultCard" class="result-card">
+        <p class="name"><span id="resName">홍길동</span> 고객님</p>
+        <p id="resPhone">010-0000-0000</p>
+        <div class="stamp-count">현재 스탬프: <span id="resStamp">0</span>개</div>
+    </div>
+
+    <script>
+        // 안전한 구글 CSV 내보내기 주소 적용
+        const pubUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSY94ttUIxlXeNrlMQ_Gq9c6K9OMBjGekb0q7XE8tM26V52j96SwlMEam0DauhlEHDlqbfTsMotnUL-/pub?output=csv";
+
+        function searchMember() {
+            const searchKeyword = document.getElementById('phoneInput').value.trim(); 
+            
+            if(!searchKeyword) {
+                alert('번호 뒤 4자리를 입력해주세요!');
+                return;
+            }
+
+            fetch(pubUrl)
+            .then(res => res.text())
+            .then(csvText => {
+                // 윈도우/맥/구글 환경에 따른 모든 줄바꿈 예외 처리 (\r\n 또는 \n)
+                const lines = csvText.replace(/\r/g, "").split('\n');
+                let found = false;
+
+                // 데이터가 시작되는 2번째 줄(인덱스 1)부터 탐색
+                for (let i = 1; i < lines.length; i++) {
+                    if (!lines[i].trim()) continue; // 빈 줄 패스
+                    
+                    // 쉼표로 칸 분리
+                    const cells = lines[i].split(',');
+                    
+                    // 따옴표 제거 및 데이터 추출 (B열:이름, C열:전화번호, D열:방문횟수)
+                    const name = cells[1] ? cells[1].replace(/"/g, '').trim() : ''; 
+                    const phone = cells[2] ? cells[2].replace(/"/g, '').trim() : ''; 
+                    let stamp = cells[3] ? cells[3].replace(/"/g, '').trim() : '0';
+
+                    // 하이픈이나 공백이 섞여있어도 순수 숫자 4자리만 비교할 수 있도록 정제
+                    const purePhone = phone.replace(/[^0-9]/g, ''); // 시트 데이터에서 숫자만 추출
+                    const pureKeyword = searchKeyword.replace(/[^0-9]/g, ''); // 입력창에서 숫자만 추출
+
+                    // 전화번호의 마지막 4자리가 입력한 4자리와 일치하는지 비교
+                    if (purePhone.endsWith(pureKeyword) || purePhone.includes(pureKeyword)) {
+                        document.getElementById('resName').innerText = name;
+                        document.getElementById('resPhone').innerText = phone;
+                        document.getElementById('resStamp').innerText = stamp ? stamp : '0';
+                        
+                        document.getElementById('resultCard').style.display = 'inline-block'; 
+                        found = true;
+                        break; 
+                    }
+                }
+
+                if (!found) {
+                    alert('등록되지 않은 번호입니다!');
+                    document.getElementById('resultCard').style.display = 'none';
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('데이터를 읽어오는 중 알 수 없는 오류가 발생했습니다.');
+            });
+        }
+    </script>
+</body>
+</html>
