@@ -6,7 +6,7 @@
     <title>타카플레이카페 회원 조회</title>
  
     <link rel="stylesheet" href="./index.css">
-    
+
 </head>
 <body>
 
@@ -26,7 +26,7 @@
             const searchKeyword = document.getElementById('phoneInput').value.trim(); 
             const container = document.getElementById('resultContainer');
             
-            // 검색할 때마다 이전 결과 화면을 깨끗하게 지웁니다.
+            // 검색할 때마다 화면 초기화
             container.innerHTML = "";
             
             if(!searchKeyword) {
@@ -38,37 +38,41 @@
             .then(res => res.text())
             .then(csvText => {
                 const lines = csvText.replace(/\r/g, "").split('\n');
-                let count = 0; // 매칭된 사람 수를 세기 위한 변수
+                let count = 0; 
 
                 for (let i = 1; i < lines.length; i++) {
                     if (!lines[i].trim()) continue; 
                     
-                    const cells = lines[i].split(',');
-                    
-                    const name = cells[1] ? cells[1].replace(/"/g, '').trim() : ''; 
-                    const phone = cells[2] ? cells[2].replace(/"/g, '').trim() : ''; 
-                    let stamp = cells[3] ? cells[3].replace(/"/g, '').trim() : '0';
-
-                    const purePhone = phone.replace(/[^0-9]/g, ''); 
-                    const pureKeyword = searchKeyword.replace(/[^0-9]/g, ''); 
-
-                    // 뒤 4자리가 일치하는 사람을 찾으면
-                    if (purePhone.endsWith(pureKeyword) || purePhone.includes(pureKeyword)) {
-                        count++; // 검색된 사람 추가
+                    // 혹시 모를 줄 데이터 깨짐 방지용 try-catch 문 추가
+                    try {
+                        const cells = lines[i].split(',');
                         
-                        // 새 카드를 HTML 태그 형태로 만들어서 컨테이너에 차곡차곡 집어넣습니다.
-                        const cardHtml = `
-                            <div class="result-card">
-                                <p class="name"><span>${name}</span> 고객님</p>
-                                <p class="phone-num">${phone}</p>
-                                <div class="stamp-count">현재 스탬프: <span>${stamp ? stamp : '0'}</span>개</div>
-                            </div>
-                        `;
-                        container.innerHTML += cardHtml;
+                        const name = cells[1] ? cells[1].replace(/"/g, '').trim() : ''; 
+                        const phone = cells[2] ? cells[2].replace(/"/g, '').trim() : ''; 
+                        let stamp = cells[3] ? cells[3].replace(/"/g, '').trim() : '0';
+
+                        const purePhone = phone.replace(/[^0-9]/g, ''); 
+                        const pureKeyword = searchKeyword.replace(/[^0-9]/g, ''); 
+
+                        // 번호 매칭 검사
+                        if (purePhone.endsWith(pureKeyword) || purePhone.includes(pureKeyword)) {
+                            count++; 
+                            
+                            // 안전하게 텍스트를 카드 형태로 추가
+                            const cardHtml = `
+                                <div class="result-card">
+                                    <p class="name"><span>${name}</span> 고객님</p>
+                                    <p class="phone-num">${phone}</p>
+                                    <div class="stamp-count">현재 스탬프: <span>${stamp}</span>개</div>
+                                </div>
+                            `;
+                            container.insertAdjacentHTML('beforeend', cardHtml);
+                        }
+                    } catch (e) {
+                        console.error("줄 해석 중 오류 패스:", e);
                     }
                 }
 
-                // 반복문이 다 끝났는데 검색된 사람이 한 명도 없다면
                 if (count === 0) {
                     alert('등록되지 않은 번호입니다!');
                 }
